@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "target": "es5",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "lib": [
+      "dom",
+      "es2015",
+      "es6",
+    ],
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "sourceMap": true,
+    "rootDir": "./",
+    "outDir": "./dist/",
+    "baseUrl": "./src/",
+    "paths": {
+      "@types": [
+        ".\\src\\types"
+      ],
+    }
+  },
+  "include": [
+    "./src/**/*.tsx",
+    "./src/**/*.ts",
+    "./src/**/*.js",
+    "./src/**/*.jsx"
+  ]
+}
