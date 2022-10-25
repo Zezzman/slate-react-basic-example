@@ -6,15 +6,25 @@
     "moduleResolution": "node",
     "lib": [
       "dom",
+      "dom.iterable",
+      "esnext",
       "es2015",
       "es6",
     ],
     "noImplicitAny": true,
     "noImplicitThis": true,
     "strictNullChecks": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "noFallthroughCasesInSwitch": true,
+    "resolveJsonModule": true,
     "strict": true,
     "sourceMap": true,
+    "noEmit": true,
     "rootDir": "./",
     "outDir": "./dist/",
     "baseUrl": "./src/",
@@ -22,7 +32,7 @@
       "@types": [
         ".\\src\\types"
       ],
-    }
+    },
   },
   "include": [
     "./src/**/*.tsx",
