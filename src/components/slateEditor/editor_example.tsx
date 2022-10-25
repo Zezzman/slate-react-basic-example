@@ -7,14 +7,13 @@ import {
 	Element as SlateElement,
 } from 'slate'
 import SlateToolbar, { getActiveBlocks, getActiveMarks, ToolbarRef } from "./toolbar"
-import "scss/slateEditor.scss"
 
 interface EditorProps extends React.HTMLAttributes<HTMLDivElement> {
-	name: string
+	name?: string
 	value?: string
 }
 
-export default function SlateEditor(props: EditorProps) {
+export default function SlateEditorTEST(props: EditorProps) {
 	const editor = useMemo(() => withReact(createEditor()), [])
 	const { name, value, ...other } = props
 	const toolbarRef = useRef<ToolbarRef>(null)

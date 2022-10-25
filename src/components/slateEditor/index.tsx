@@ -23,7 +23,7 @@ import {
 	FormatAlignJustify
 } from "@mui/icons-material"
 import { CustomText } from 'types/Slate'
-import { SlateButton, Icon } from './components'
+import { SlateButton } from './components'
 import { withHistory } from 'slate-history'
 
 import "scss/slateEditor.scss"
@@ -33,14 +33,19 @@ const LIST_TYPES = ['numbered-list', 'bulleted-list']
 const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
 
 const SlateEditor = (props: any) => {
-	const { name, value, ...other } = props
+	const { name, value, className, ...other } = props
 
 	const renderElement = useCallback((props: any) => <Element {...props} />, [])
 	const renderLeaf = useCallback((props: any) => <Leaf {...props} />, [])
 	const editor = useMemo(() => withHistory(withReact(createEditor())), [])
 
+	const classNames = [
+		'slate-editor',
+		className,
+	]
+
 	return (
-		<div {...other}>
+		<div className={classNames.join(' ')} {...other}>
 			<Slate editor={editor} value={initialValue}>
 				<SlateToolbar className="slate-toolbar">
 					<MarkButton value="bold" icon={<FormatBold fontSize="small" />} />
@@ -210,34 +215,34 @@ const Leaf = ({ attributes, children, leaf }: any) => {
 const BlockButton = ({ value: format, icon }: any) => {
 	const editor = useSlate()
 	return (
-		<SlateButton
-			active={isBlockActive(
+		<span
+			/* active={isBlockActive(
 				editor,
 				format,
 				TEXT_ALIGN_TYPES.includes(format) ? 'align' : 'type'
-			)}
+			)} */
 			onMouseDown={(event: any) => {
 				event.preventDefault()
 				toggleBlock(editor, format)
 			}}
 		>
 			{icon}
-		</SlateButton>
+		</span>
 	)
 }
 
 const MarkButton = ({ value: format, icon }: any) => {
 	const editor = useSlate()
 	return (
-		<SlateButton
-			active={isMarkActive(editor, format)}
+		<span
+			/* active={isMarkActive(editor, format)} */
 			onMouseDown={(event: any) => {
 				event.preventDefault()
 				toggleMark(editor, format)
 			}}
 		>
 			{icon}
-		</SlateButton>
+		</span>
 	)
 }
 

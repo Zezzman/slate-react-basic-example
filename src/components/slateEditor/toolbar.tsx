@@ -28,7 +28,7 @@ const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
 
 interface ToolbarProps extends ToolbarPropsVariantOverrides {
 	className?: string;
-	children?: React.ReactElement[]
+	children?: React.ReactElement | React.ReactElement[]
 }
 
 export interface ToolbarRef extends ToolbarProps {

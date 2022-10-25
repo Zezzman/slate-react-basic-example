@@ -16,6 +16,17 @@ export default function componentStyleOverrides(theme: typeof themeParams): Them
           backgroundColor: theme.palette.paper,
         },
       }
+    },
+    MuiToggleButton: {
+      styleOverrides: {
+        root: {
+          textAlign: 'center',
+          
+          ">span": {
+            lineHeight: 1,
+          }
+        }
+      }
     }
   };
 }
