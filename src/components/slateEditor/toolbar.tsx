@@ -1,257 +1,226 @@
-import React, { ForwardedRef, PropsWithChildren, useCallback, useMemo, useRef } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { ToggleButton, ToggleButtonGroup, Toolbar, ToolbarPropsVariantOverrides } from "@mui/material";
 import {
-	Editor,
-	Transforms,
-	Element as SlateElement,
+  Editor,
+  Transforms,
+  Element as SlateElement,
 } from "slate";
-import {
-	FormatBold,
-	FormatItalic,
-	FormatUnderlined,
-	Code,
-	LooksOne,
-	LooksTwo,
-	FormatQuote,
-	FormatListNumbered,
-	FormatListBulleted,
-	FormatAlignLeft,
-	FormatAlignCenter,
-	FormatAlignRight,
-	FormatAlignJustify
-} from "@mui/icons-material"
-import { CustomText } from "types/Slate";
 import { useSlate } from "slate-react";
+import { CustomText } from "types/Slate";
 
-const LIST_TYPES = ['numbered-list', 'bulleted-list']
-const TEXT_ALIGN_TYPES = ['left', 'center', 'right', 'justify']
+const FORMAT_TYPES: { [key: string]: { [key: string]: string } } = {
+  bold: {
+    mark: "bold"
+  },
+  italic: {
+    mark: "italic"
+  },
+  underline: {
+    mark: "underline"
+  },
+  code: {
+    mark: "code"
+  },
+  "heading-one": {
+    block: "heading-one"
+  },
+  "heading-two": {
+    block: "heading-two"
+  },
+  "block-quote": {
+    block: "block-quote"
+  },
+  numbered: {
+    list: "numbered"
+  },
+  bulleted: {
+    list: "bulleted"
+  },
+  left: {
+    align: "left"
+  },
+  center: {
+    align: "center"
+  },
+  right: {
+    align: "right"
+  },
+  justify: {
+    align: "justify"
+  },
+}
 
 interface ToolbarProps extends ToolbarPropsVariantOverrides {
-	className?: string;
-	children?: React.ReactElement | React.ReactElement[]
+  className?: string;
+  children?: React.ReactElement | React.ReactElement[]
 }
 
 export interface ToolbarRef extends ToolbarProps {
-	setFormats?: (format: string[]) => void
+  setFormats: (format: string[]) => void
 }
 
 const SlateToolbar = React.forwardRef<ToolbarRef, ToolbarProps>((props, ref) => {
-	const editor = useSlate()
-	const toolbarRef = useRef<HTMLDivElement | null>(null)
+  const editor = useSlate()
+  const toolbarRef = useRef<HTMLDivElement | null>(null)
 
-	const formatsRef = useRef<string[]>([])
-	const [formats, setFormats] = React.useState(() => ([] as string[]));
+  const [formats, setFormats] = React.useState(() => ([] as string[]));
 
-	const handleFormat = useCallback((e: any, newFormats: string[]) => {
-		setFormats(newFormats)
-	}, [])
+  const handleClick = useCallback(() => {
+    setFormats(getActiveFormats(editor))
+  }, [editor, setFormats])
 
-	// useMemo(() => {
-	// 	const appliedFormats = formatsRef.current
-	// 	const newFormats = formats.filter((format) => !appliedFormats.includes(format))
-	// 	const removedFormats = appliedFormats.filter((format) => !formats.includes(format))
+  const children = useMemo(() => {
+    return React.Children.map(props.children, (child) => {
+      if (React.isValidElement(child)) {
+        const props = child.props as any
+        return React.createElement(ToggleButton, {
+          size: "small",
+          value: props.value,
+          onMouseDown: (e) => (e.preventDefault()),
+          onClick: handleClick
+        }, React.cloneElement<any>(child, {
+          ...props,
+          active: formats.includes(props.value),
+        }))
+      }
+      return child
+    })
+  }, [formats, props.children, handleClick])
 
-	// 	for (const format of newFormats) {
-	// 		if (LIST_TYPES.includes(format) || TEXT_ALIGN_TYPES.includes(format)) {
-	// 			enableBlock(editor, format)
-	// 		} else {
-	// 			enableMark(editor, format)
-	// 		}
-	// 	}
-
-	// 	for (const format of removedFormats) {
-	// 		if (LIST_TYPES.includes(format) || TEXT_ALIGN_TYPES.includes(format)) {
-	// 			disableBlock(editor, format)
-	// 		} else {
-	// 			disableMark(editor, format)
-	// 		}
-	// 	}
-	// }, [formats])
-
-	const children = useMemo(() => {
-		return React.Children.map(props.children, (child) => {
-			if (React.isValidElement(child)) {
-				const props = child.props as any
-				return React.createElement(ToggleButton, {
-					size: "small",
-					value: props.value,
-					onMouseDown: (e) => (e.preventDefault()),
-				}, child)
-
-			}
-			return child
-		})
-	}, [props.children])
-
-	return (
-		<Toolbar ref={element => {
-			toolbarRef.current = element
-			if (typeof ref === 'function') {
-				ref(element as any);
-			} else if (ref) {
-				ref.current = (element as any);
-				ref.current && (ref.current.setFormats = setFormats);
-			}
-		}} className="slate-toolbar" variant="dense">
-			<ToggleButtonGroup size="small" value={formats} onChange={handleFormat}>
-				{children}
-			</ToggleButtonGroup>
-		</Toolbar>
-	)
+  return (
+    <Toolbar ref={element => {
+      toolbarRef.current = element
+      if (typeof ref === 'function') {
+        ref(element as any);
+      } else if (ref) {
+        ref.current = (element as any);
+        ref.current && (ref.current.setFormats = setFormats);
+      }
+    }} className="slate-toolbar" variant="dense">
+      <ToggleButtonGroup size="small" value={formats}>
+        {children}
+      </ToggleButtonGroup>
+    </Toolbar>
+  )
 })
 
-export const getActiveBlocks = (editor: Editor) => {
-	const blocks = [] as string[]
-	const { selection } = editor
-	if (!selection) return blocks
+export const getActiveFormats = (editor: Editor) => {
+  const { selection } = editor
+  const marks = getActiveMarks(editor)
+  const blocks = marks
+  if (!selection) { return blocks }
 
-	const [match] = Array.from(
-		Editor.nodes(editor, {
-			at: Editor.unhangRange(editor, selection),
-			match: (n: { [key: string]: any }) => {
-				const type = n['align']
-				const align = n['type']
-				return !Editor.isEditor(n) &&
-					SlateElement.isElement(n) &&
-					(type || align)
-			}
-		})
-	)
+  Array.from(
+    Editor.nodes(editor, {
+      at: Editor.unhangRange(editor, selection),
+      match: (n: { [key: string]: any }) => {
+        if (Editor.isEditor(n)) { return false }
 
-	return blocks
-}
-export const getActiveMarks = (editor: Editor) => {
-	return Object.keys(Editor.marks(editor) || {}) as string[]
-}
+        console.log(n)
+        const properties = Object.entries(n)
 
-const isBlockActive = (editor: Editor, format: string, blockType: string = 'type') => {
-	const { selection } = editor
-	if (!selection) return false
+        // Get block types from the element nodes
+        if (SlateElement.isElement(n)) {
+          const align = (n.align && FORMAT_TYPES[n.align]) || {}
+          if (align.align && !blocks.includes(align.align)
+            && FORMAT_TYPES.hasOwnProperty(align.align)) {
+            blocks.push(align.align)
+          }
 
-	const [match] = Array.from(
-		Editor.nodes(editor, {
-			at: Editor.unhangRange(editor, selection),
-			match: (n: { [key: string]: any }) => {
-				const type = n[blockType]
-				return !Editor.isEditor(n) &&
-					SlateElement.isElement(n) &&
-					type === format
-			}
-		})
-	)
+          const type = (n.type && FORMAT_TYPES[n.type]) || {}
+          if (type.block && !blocks.includes(type.block)
+            && FORMAT_TYPES.hasOwnProperty(type.block)) {
+            blocks.push(type.block)
+          }
+          return true
+        }
 
-	return !!match
-}
+        // Get marks on text nodes
+        properties.forEach(([key, value]) => {
+          if (!value) { return }
+          const mark = FORMAT_TYPES[key] || {}
+          if (mark.mark && !blocks.includes(key)) {
+            blocks.push(key)
+          }
+        })
 
-const isMarkActive = (editor: Editor, format: string) => {
-	const marks = Editor.marks(editor) as any
-	return marks ? marks[format] === true : false
-}
+        return true
+      }
+    })
+  )
 
-const enableBlock = (editor: Editor, format: string) => {
-	const isActive = isBlockActive(
-		editor,
-		format,
-		TEXT_ALIGN_TYPES.includes(format) ? 'align' : 'type'
-	)
-	const isList = LIST_TYPES.includes(format)
-
-	Transforms.unwrapNodes(editor, {
-		match: n =>
-			!Editor.isEditor(n) &&
-			SlateElement.isElement(n) &&
-			LIST_TYPES.includes(n.type) &&
-			!TEXT_ALIGN_TYPES.includes(format),
-		split: true,
-	})
-	let newProperties: Partial<SlateElement>
-	if (TEXT_ALIGN_TYPES.includes(format)) {
-		newProperties = {
-			align: (isActive ? undefined : format) as any,
-		}
-	} else {
-		newProperties = {
-			type: (isActive ? 'paragraph' : isList ? 'list-item' : format) as any,
-		}
-	}
-	Transforms.setNodes<SlateElement>(editor, newProperties)
-
-	if (!isActive && isList) {
-		const block = { type: format as any, children: [] as CustomText[] }
-		Transforms.wrapNodes(editor, block)
-	}
+  return blocks
 }
 
-const disableBlock = (editor: Editor, format: string) => {
-	const isActive = isBlockActive(
-		editor,
-		format,
-		TEXT_ALIGN_TYPES.includes(format) ? 'align' : 'type'
-	)
-	const isList = LIST_TYPES.includes(format)
-
-	Transforms.unwrapNodes(editor, {
-		match: n =>
-			!Editor.isEditor(n) &&
-			SlateElement.isElement(n) &&
-			LIST_TYPES.includes(n.type) &&
-			!TEXT_ALIGN_TYPES.includes(format),
-		split: true,
-	})
-	let newProperties: Partial<SlateElement>
-	if (TEXT_ALIGN_TYPES.includes(format)) {
-		newProperties = {
-			align: (isActive ? undefined : format) as any,
-		}
-	} else {
-		newProperties = {
-			type: (isActive ? 'paragraph' : isList ? 'list-item' : format) as any,
-		}
-	}
-	Transforms.setNodes<SlateElement>(editor, newProperties)
-
-	if (!isActive && isList) {
-		const block = { type: format as any, children: [] as CustomText[] }
-		Transforms.wrapNodes(editor, block)
-	}
+const getActiveMarks = (editor: Editor) => {
+  return Object.keys(Editor.marks(editor) || {}) as string[]
 }
 
-const enableMark = (editor: Editor, format: string) => {
-	const isActive = isMarkActive(editor, format)
-	if (isActive) { return }
-
-	Editor.addMark(editor, format, true)
+export const formatIsActive = (editor: Editor, format: string) => {
+  const formats = getActiveFormats(editor)
+  return formats.includes(format)
 }
 
-const disableMark = (editor: Editor, format: string) => {
-	const isActive = isMarkActive(editor, format)
-	if (!isActive) { return }
+export const enableFormat = (editor: Editor, format: string) => {
+  const isActive = formatIsActive(editor, format)
+  const isList = FORMAT_TYPES[format]?.list ? true : false
+  const isAlignment = FORMAT_TYPES[format]?.align ? true : false
 
-	Editor.removeMark(editor, format)
+  if (isActive) { return }
+
+  Transforms.unwrapNodes(editor, {
+    match: (n) => {
+      const isList = (SlateElement.isElement(n) && FORMAT_TYPES[n.type]?.list) ? true : false
+      return !Editor.isEditor(n)
+        && isList
+        && !isAlignment
+    },
+    split: true,
+  })
+  let newProperties: Partial<SlateElement>
+  if (isAlignment) {
+    newProperties = {
+      align: format as any,
+    }
+  } else {
+    newProperties = {
+      type: (isList ? 'list-item' : format) as any,
+    }
+  }
+  Transforms.setNodes<SlateElement>(editor, newProperties)
+
+  if (isList) {
+    const block = { type: format as any, children: [] as CustomText[] }
+    Transforms.wrapNodes(editor, block)
+  }
 }
 
-const applyFormats = (editor: Editor, formats: string[]) => {
-	for (const format of formats) {
-		if (LIST_TYPES.includes(format)) {
-			enableBlock(editor, format)
-		} else if (TEXT_ALIGN_TYPES.includes(format)) {
-			enableBlock(editor, format)
-		} else {
-			enableMark(editor, format)
-		}
-	}
-}
+export const disableFormat = (editor: Editor, format: string) => {
+  const isActive = formatIsActive(editor, format)
+  const isAlignment = FORMAT_TYPES[format]?.align ? true : false
 
-const removeFormats = (editor: Editor, formats: string[]) => {
-	for (const format of formats) {
-		if (LIST_TYPES.includes(format)) {
-			disableBlock(editor, format)
-		} else if (TEXT_ALIGN_TYPES.includes(format)) {
-			disableBlock(editor, format)
-		} else {
-			disableMark(editor, format)
-		}
-	}
+  if (!isActive) { return }
+
+  Transforms.unwrapNodes(editor, {
+    match: (n) => {
+      const isList = (SlateElement.isElement(n) && FORMAT_TYPES[n.type]?.list) ? true : false
+      return !Editor.isEditor(n)
+        && isList
+        && !isAlignment
+    },
+    split: true,
+  })
+  let newProperties: Partial<SlateElement>
+  if (isAlignment) {
+    newProperties = {
+      align: undefined,
+    }
+  } else {
+    newProperties = {
+      type: 'paragraph' as any,
+    }
+  }
+  Transforms.setNodes<SlateElement>(editor, newProperties)
 }
 
 export default SlateToolbar;
